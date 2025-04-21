@@ -111,6 +111,41 @@ document.addEventListener('DOMContentLoaded', function() {
         sectionObserver.observe(section);
     });
     
+    // Ensure venue section gets animated properly
+    const venueSection = document.querySelector('.venue-section');
+    if (venueSection) {
+        // Initialize animation separately to ensure it works properly
+        venueSection.style.opacity = '0';
+        venueSection.style.transform = 'translateY(20px)';
+        venueSection.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        
+        // Apply intersection observer to the venue section
+        sectionObserver.observe(venueSection);
+        
+        // Handle iframe loading efficiently
+        const venueMap = venueSection.querySelector('.venue-map iframe');
+        if (venueMap) {
+            // Only load iframe content when venue section comes into view
+            const mapObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Ensure the src attribute is set when in view to improve performance
+                        const iframe = entry.target;
+                        if (iframe.dataset.src) {
+                            iframe.src = iframe.dataset.src;
+                            iframe.removeAttribute('data-src');
+                        }
+                        mapObserver.unobserve(iframe);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+            
+            mapObserver.observe(venueMap);
+        }
+    }
+    
     // Photo gallery button functionality (for future implementation)
     const galleryBtn = document.getElementById('galleryBtn');
     
