@@ -1,23 +1,28 @@
 // Theme Toggle Functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Preloader functionality
+    // Preloader functionality - Fixed version
     const preloader = document.getElementById('preloader');
     const mainContent = document.getElementById('main-content');
     
-    // Hide preloader and show content after resources are loaded
-    window.addEventListener('load', function() {
-        // Give a minimum time of 2 seconds for the preloader to display
+    if (preloader && mainContent) {
+        // Show main content right away
+        mainContent.style.opacity = '1';
+        
+        // Hide preloader after a small delay
         setTimeout(() => {
-            preloader.style.opacity = '0';
-            preloader.style.visibility = 'hidden';
-            mainContent.style.opacity = '1';
-            
-            // Remove preloader from DOM after transition completes
-            setTimeout(() => {
-                preloader.remove();
-            }, 500);
-        }, 2000);
-    });
+            if (preloader && preloader.style) {
+                preloader.style.opacity = '0';
+                preloader.style.visibility = 'hidden';
+                
+                // Remove preloader after transition
+                setTimeout(() => {
+                    if (preloader && preloader.parentNode) {
+                        preloader.parentNode.removeChild(preloader);
+                    }
+                }, 500);
+            }
+        }, 1500);
+    }
     
     const themeToggle = document.querySelector('.theme-toggle');
     const moonIcon = document.querySelector('.fa-moon');
