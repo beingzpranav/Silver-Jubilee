@@ -1,5 +1,8 @@
 // Theme Toggle Functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Detect mobile devices for performance optimizations
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
     // Preloader functionality - Fixed version
     const preloader = document.getElementById('preloader');
     const mainContent = document.getElementById('main-content');
@@ -21,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, 500);
             }
-        }, 1500);
+        }, 1000); // Reduced from 1500ms for faster loading
     }
     
     const themeToggle = document.querySelector('.theme-toggle');
@@ -59,164 +62,144 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Animate timeline events when they come into view
-    const events = document.querySelectorAll('.event');
-    const animateEvents = function() {
-        events.forEach((event, index) => {
-            const eventPosition = event.getBoundingClientRect().top;
-            const screenPosition = window.innerHeight / 1.2;
-            
-            if (eventPosition < screenPosition) {
-                // Add staggered animation delay based on index
+    // Intersection Observer for animations - more efficient than scroll events
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1
+    };
+    
+    // Observer for timeline events
+    const eventObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                // Add animate class with staggered delay
                 setTimeout(() => {
-                    event.classList.add('animate');
-                }, index * 150); // 150ms delay between each card for faster animation
+                    entry.target.classList.add('animate');
+                }, index * (isMobile ? 100 : 150)); // Reduced delay on mobile
+                
+                // Unobserve after animating to save resources
+                eventObserver.unobserve(entry.target);
             }
         });
-    };
+    }, observerOptions);
     
-    // Animate sections when they come into view
-    const animateSections = function() {
-        const sections = document.querySelectorAll('section');
-        
-        sections.forEach(section => {
-            const sectionTop = section.getBoundingClientRect().top;
-            const screenPosition = window.innerHeight / 1.1;
-            
-            if (sectionTop < screenPosition) {
-                section.style.opacity = '1';
-                section.style.transform = 'translateY(0)';
+    // Observer for sections
+    const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+                
+                // Unobserve after animating
+                sectionObserver.unobserve(entry.target);
             }
         });
-    };
+    }, observerOptions);
     
-    // Add initial styles to sections
+    // Observe all events
+    const events = document.querySelectorAll('.event');
+    events.forEach(event => {
+        eventObserver.observe(event);
+    });
+    
+    // Add initial styles to sections and observe them
     document.querySelectorAll('section').forEach(section => {
         section.style.opacity = '0';
         section.style.transform = 'translateY(20px)';
         section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        sectionObserver.observe(section);
     });
-    
-    // Run animation check on load and scroll
-    window.addEventListener('scroll', () => {
-        animateEvents();
-        animateSections();
-    });
-    
-    // Initial check on page load
-    setTimeout(() => {
-        animateEvents();
-        animateSections();
-    }, 100);
     
     // Photo gallery button functionality (for future implementation)
     const galleryBtn = document.getElementById('galleryBtn');
     
     // This function would be used when photos are available
     function enableGallery(driveLink) {
-        galleryBtn.disabled = false;
-        galleryBtn.addEventListener('click', function() {
-            window.open(driveLink, '_blank');
-        });
+        if (galleryBtn) {
+            galleryBtn.disabled = false;
+            galleryBtn.addEventListener('click', function() {
+                window.open(driveLink, '_blank');
+            });
+        }
     }
     
-    // Example of how to enable the gallery button in the future
-    // Uncomment and add the actual Google Drive link when available
-    // const googleDriveFolder = 'https://drive.google.com/file/d/1r85VY4d-HD5_6-_Vaxd1ZSKRvvqIbyyp/view?usp=sharing';
-    // enableGallery(googleDriveFolder);
-    
-    // Initialize circular photo display
-    const photoContainer = document.querySelector('.photo-container');
-    
-    // Helper function to generate various Google Drive image URLs to try
-    function getGoogleDriveImageUrls(fileId) {
-        return [
-            `https://lh3.googleusercontent.com/d/${fileId}`, // Direct lh3 format
-            `https://drive.google.com/uc?export=view&id=${fileId}`, // View export format
-            `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`, // Thumbnail format
-            `https://drive.google.com/uc?export=download&id=${fileId}`, // Download export format
-        ];
-    }
-    
-    // Primary and fallback photo URLs
-    const googleDriveId = '1r85VY4d-HD5_6-_Vaxd1ZSKRvvqIbyyp';
-    const googleDriveUrls = getGoogleDriveImageUrls(googleDriveId);
-    const fallbackPhotos = [
-        ...googleDriveUrls, // Try all Google Drive URL formats
-        'images/couple-photo.jpg', // Local image fallback
-        'https://images.unsplash.com/photo-1537633552985-df8429e048b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    ];
-    
-    // Set up circular photo with error handling
+    // Set up circular photo with error handling - more efficient version
     function setupCircularPhoto() {
         const photo = document.querySelector('.photo');
         if (!photo) return;
         
-        // Try to load the images in sequence
-        tryLoadingImages(photo, 0, fallbackPhotos);
+        // Simplified image loading for better performance
+        // Primary and backup images
+        const imageUrls = [
+            'images/couple-photo.jpg', // Try local image first
+            'https://lh3.googleusercontent.com/d/1r85VY4d-HD5_6-_Vaxd1ZSKRvvqIbyyp'
+        ];
         
-        // Create sparkle particles
-        createSparkles();
+        loadImageSequentially(photo, imageUrls);
+        
+        // Create sparkles only if not on mobile or reduce them significantly
+        if (!isMobile) {
+            createSparkles();
+        } else {
+            createSparkles(5); // Create fewer sparkles on mobile
+        }
     }
     
-    // Function to try loading images sequentially
-    function tryLoadingImages(photoElement, index, imageUrls) {
-        if (index >= imageUrls.length) {
-            console.log('All image URLs failed, using placeholder');
-            // If all images fail, use a placeholder
-            photoElement.style.backgroundImage = 'none';
-            photoElement.style.backgroundColor = 'var(--primary-color)';
+    // Simplified image loader
+    function loadImageSequentially(photoElement, imageUrls) {
+        let loadAttempt = 0;
+        
+        function tryNextImage() {
+            if (loadAttempt >= imageUrls.length) {
+                // If all images fail, use a placeholder
+                photoElement.style.backgroundImage = 'none';
+                photoElement.style.backgroundColor = 'var(--primary-color)';
+                
+                // Add a heart icon
+                const placeholder = document.createElement('div');
+                placeholder.className = 'photo-placeholder';
+                placeholder.innerHTML = '<i class="fas fa-heart"></i>';
+                photoElement.appendChild(placeholder);
+                return;
+            }
             
-            // Add a heart icon
-            const placeholder = document.createElement('div');
-            placeholder.className = 'photo-placeholder';
-            placeholder.innerHTML = '<i class="fas fa-heart"></i>';
-            photoElement.appendChild(placeholder);
-            return;
+            const img = new Image();
+            const imageUrl = imageUrls[loadAttempt];
+            
+            img.onload = function() {
+                photoElement.style.backgroundImage = `url('${imageUrl}')`;
+            };
+            
+            img.onerror = function() {
+                loadAttempt++;
+                tryNextImage();
+            };
+            
+            // Set timeout
+            const timer = setTimeout(() => {
+                if (!img.complete) {
+                    loadAttempt++;
+                    tryNextImage();
+                }
+            }, 3000); // 3 second timeout (reduced from 5s)
+            
+            img.onload = function() {
+                clearTimeout(timer);
+                photoElement.style.backgroundImage = `url('${imageUrl}')`;
+            };
+            
+            img.src = imageUrl;
         }
         
-        const imageUrl = imageUrls[index];
-        console.log(`Trying to load image (${index + 1}/${imageUrls.length}):`, imageUrl);
-        
-        const img = new Image();
-        img.onload = function() {
-            console.log('Successfully loaded image:', imageUrl);
-            photoElement.style.backgroundImage = `url('${imageUrl}')`;
-        };
-        
-        img.onerror = function() {
-            console.log('Failed to load image:', imageUrl);
-            // Try the next image
-            tryLoadingImages(photoElement, index + 1, imageUrls);
-        };
-        
-        // Set a timeout to move to the next image if this one takes too long
-        const timeout = setTimeout(() => {
-            console.log('Image load timed out:', imageUrl);
-            if (!img.complete || !img.naturalWidth) {
-                tryLoadingImages(photoElement, index + 1, imageUrls);
-            }
-        }, 5000); // 5 second timeout
-        
-        img.onload = function() {
-            clearTimeout(timeout);
-            console.log('Successfully loaded image:', imageUrl);
-            photoElement.style.backgroundImage = `url('${imageUrl}')`;
-        };
-        
-        img.onerror = function() {
-            clearTimeout(timeout);
-            console.log('Failed to load image:', imageUrl);
-            // Try the next image
-            tryLoadingImages(photoElement, index + 1, imageUrls);
-        };
-        
-        img.src = imageUrl;
+        tryNextImage();
     }
     
-    // Handle mousemove for interactive sparkle trail
+    // Optimized sparkle trail for mobile
     function setupSparkleTrail() {
+        // Skip on mobile devices
+        if (isMobile) return;
+        
         const circularPhoto = document.querySelector('.circular-photo');
         const container = document.querySelector('.circular-photo-container');
         
@@ -229,10 +212,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (throttled) return;
                 throttled = true;
                 
-                // Throttle to create fewer, more meaningful sparkles
+                // Increased throttle time for better performance
                 setTimeout(() => {
                     throttled = false;
-                }, 50); // Increased throttle time for fewer sparkles
+                }, 80);
                 
                 const rect = container.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -240,14 +223,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Only create sparkle if mouse moved enough
                 const distance = Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
-                if (distance < 8) return; // Increased minimum distance
+                if (distance < 15) return; // Increased minimum distance for fewer effects
                 
                 lastX = x;
                 lastY = y;
                 
-                // Create sparkle with varied sizes for more natural effect
-                const size = Math.random() * 4 + 1; // Smaller size
-                const opacity = Math.random() * 0.2 + 0.3; // Lower opacity
+                // Create sparkle (smaller and fewer)
+                const size = Math.random() * 3 + 1; // Smaller size
+                const opacity = Math.random() * 0.2 + 0.2; // Lower opacity
                 
                 // Create a temporary sparkle at mouse position
                 const tempSparkle = document.createElement('div');
@@ -257,25 +240,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 tempSparkle.style.top = y + 'px';
                 tempSparkle.style.left = x + 'px';
                 tempSparkle.style.opacity = opacity.toString();
-                tempSparkle.style.animation = 'none';
                 tempSparkle.style.backgroundColor = getSparkleColor();
                 tempSparkle.style.transform = 'scale(1)';
-                tempSparkle.style.boxShadow = `0 0 ${size * 2}px 1px rgba(255, 215, 0, 0.4)`;
                 
                 container.appendChild(tempSparkle);
                 
                 // Remove sparkle with natural fade
                 setTimeout(() => {
-                    tempSparkle.style.transition = 'all 0.6s ease';
+                    tempSparkle.style.transition = 'all 0.5s ease';
                     tempSparkle.style.opacity = '0';
-                    tempSparkle.style.transform = `scale(${Math.random() * 0.4 + 0.6})`;
                     
                     setTimeout(() => {
                         if (tempSparkle.parentNode) {
                             tempSparkle.remove();
                         }
-                    }, 600);
-                }, Math.random() * 80 + 40);
+                    }, 500);
+                }, 40);
             });
         }
     }
@@ -283,21 +263,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Helper function to get varied sparkle colors
     function getSparkleColor() {
         const colors = [
-            'rgba(255, 215, 0, 0.8)',  // Gold
-            'rgba(255, 223, 0, 0.8)',  // Light gold
-            'rgba(255, 193, 7, 0.7)',  // Amber
-            'rgba(255, 235, 59, 0.7)'  // Yellow
+            'rgba(255, 215, 0, 0.7)',  // Gold
+            'rgba(255, 193, 7, 0.6)'   // Amber
         ];
         return colors[Math.floor(Math.random() * colors.length)];
     }
     
-    // Create additional sparkles dynamically with improved distribution
-    function createSparkles() {
+    // Create fewer sparkles, especially on mobile
+    function createSparkles(count = 15) {
         const sparklesContainer = document.querySelector('.sparkles-container');
         if (!sparklesContainer) return;
         
         // Add small dynamic sparkles with better distribution
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < count; i++) {
             const sparkle = document.createElement('div');
             sparkle.className = 'sparkle';
             
@@ -310,8 +288,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const x = centerX + Math.cos(angle) * distance;
             const y = centerY + Math.sin(angle) * distance;
             
-            // Randomize sparkle properties
-            const size = Math.random() * 5 + 3;
+            // Smaller size for better performance
+            const size = Math.random() * 4 + 2;
             
             sparkle.style.width = size + 'px';
             sparkle.style.height = size + 'px';
@@ -324,11 +302,6 @@ document.addEventListener('DOMContentLoaded', function() {
             sparklesContainer.appendChild(sparkle);
         }
     }
-    
-   
-    
-    // Insert the developer section before the copyright text
-   
     
     // Add smooth scrolling for all anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -346,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Improve performance on mobile devices
+    // Improve performance by stopping animations during resize
     let resizeTimer;
     window.addEventListener('resize', () => {
         document.body.classList.add('resize-animation-stopper');
@@ -357,7 +330,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Initialize photo display and sparkle effects
-    console.log('Initializing photo display');
     setupCircularPhoto();
-    setupSparkleTrail();
+    
+    // Only setup sparkle trail for non-mobile devices
+    if (!isMobile) {
+        setupSparkleTrail();
+    }
 });
