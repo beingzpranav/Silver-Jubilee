@@ -76,6 +76,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Add animate class with staggered delay
                 setTimeout(() => {
                     entry.target.classList.add('animate');
+                    
+                    // Find event card and animate it
+                    const eventCard = entry.target.querySelector('.animated-event-card');
+                    if (eventCard) {
+                        // Add slightly longer delay before border animation to avoid conflict with slide-in animation
+                        setTimeout(() => {
+                            // Trigger border animation
+                            const border = eventCard.querySelector('.border');
+                            
+                            if (border) {
+                                border.style.opacity = '0.7';
+                                border.style.inset = '8px';
+                                border.style.transform = 'rotate(0)';
+                            }
+                            
+                            // Reset animations after a delay to allow hover effects
+                            setTimeout(() => {
+                                if (border) {
+                                    border.style.opacity = '';
+                                    border.style.inset = '';
+                                    border.style.transform = '';
+                                }
+                            }, 1800);
+                        }, 800); // Increased from 500ms to avoid conflict with slide animation
+                    }
                 }, index * (isMobile ? 100 : 150)); // Reduced delay on mobile
                 
                 // Unobserve after animating to save resources
@@ -110,6 +135,33 @@ document.addEventListener('DOMContentLoaded', function() {
         section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         sectionObserver.observe(section);
     });
+    
+    // Ensure the card animation starts when visible
+    const jubileeCard = document.querySelector('.jubilee-card');
+    if (jubileeCard) {
+        // Create a separate observer for the card that triggers the hover effect
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Add a slight delay before triggering the hover animation
+                    setTimeout(() => {
+                        jubileeCard.classList.add('animate-hover');
+                        
+                        // After animation completes, remove the class to allow manual hover
+                        setTimeout(() => {
+                            jubileeCard.classList.remove('animate-hover');
+                        }, 3000);
+                    }, 1000);
+                    
+                    cardObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.7
+        });
+        
+        cardObserver.observe(jubileeCard);
+    }
     
     // Ensure venue section gets animated properly
     const venueSection = document.querySelector('.venue-section');
