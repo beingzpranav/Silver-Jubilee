@@ -201,6 +201,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Photo gallery button functionality (for future implementation)
     const galleryBtn = document.getElementById('galleryBtn');
     
+    // Enable gallery with Google Drive link
+    const driveLink = "https://drive.google.com/drive/folders/1dYMP2SAXgxL1WIg_NKXqp2JV9bwOKd_C?usp=sharing";
+    if (galleryBtn) {
+        galleryBtn.addEventListener('click', function() {
+            window.open(driveLink, '_blank');
+        });
+    }
+    
     // This function would be used when photos are available
     function enableGallery(driveLink) {
         if (galleryBtn) {
